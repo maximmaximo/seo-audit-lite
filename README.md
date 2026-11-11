@@ -99,3 +99,13 @@ For security, the application rejects private/reserved DNS results and IP addres
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+
+## Version 1.1 notes
+
+- Improved rating card layout so labels are fully readable.
+- Wider, taller results table with explicit column sizing and a readability hint.
+- Updated Streamlit layout parameters from deprecated `use_container_width` to `width="stretch"`.
+- Retained the HTTP response encoding fix and server-side error logging from the deployed version.
+
+**Deployment:** Upload the updated files to the existing GitHub repository on the `main` branch. Streamlit Community Cloud should redeploy automatically.

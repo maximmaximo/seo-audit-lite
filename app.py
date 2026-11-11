@@ -13,6 +13,11 @@ st.markdown("""<style>
 .eyebrow {text-transform:uppercase;letter-spacing:.16em;font-size:.72rem;font-weight:700;color:#a5b4fc;margin-bottom:12px}
 div[data-testid="stMetric"] {background:white;border:1px solid #e4eaf3;border-radius:16px;padding:16px 20px;box-shadow:0 3px 15px #152c4b08}
 div[data-testid="stMetricLabel"] {color:#5b6780}
+div[data-testid="stMetricValue"] {font-size:clamp(1.25rem, 2.1vw, 2rem);overflow-wrap:anywhere;line-height:1.3}
+.audit-rating {background:#fff;border:1px solid #e4eaf3;border-radius:16px;padding:15px 20px;box-shadow:0 3px 15px #152c4b08;min-height:112px}
+.audit-rating-label {font-size:.88rem;color:#5b6780;margin-bottom:9px}
+.audit-rating-value {font-size:1.35rem;font-weight:700;color:#14233d;line-height:1.25;overflow-wrap:anywhere}
+.audit-note {color:#64748b;font-size:.88rem}
 .stButton>button[kind="primary"] {background:#4f46e5;border-radius:10px;border:0;font-weight:700}
 section[data-testid="stSidebar"] {background:#fff}
 </style>""", unsafe_allow_html=True)
@@ -24,7 +29,7 @@ with st.form("scan_form"):
     with left:
         website = st.text_input("Website URL", placeholder="https://example.com", help="Only publicly reachable HTML websites are supported.")
     with right:
-        submit = st.form_submit_button("Analyze website →", type="primary", use_container_width=True)
+        submit = st.form_submit_button("Analyze website →", type="primary", width="stretch")
 
 if submit:
     with st.spinner("Fetching and analyzing the page..."):
@@ -47,10 +52,17 @@ report = st.session_state.get("report")
 if report:
     st.markdown("### Your audit results")
     st.caption(f"Analyzed URL: {report['url']} · {report['audited_at'][:19].replace('T', ' ')} UTC")
-    cols = st.columns(5)
-    metrics = [("SEO score", f"{report['score']}/100"), ("Rating", report["grade"]), ("Passed", report["summary"]["pass"]), ("Warnings", report["summary"]["warning"]), ("Failed", report["summary"]["fail"])]
-    for col, (label, value) in zip(cols, metrics):
-        col.metric(label, value)
+    cols = st.columns([1.1, 1.55, 1, 1, 1], gap="small")
+    cols[0].metric("SEO score", f"{report['score']}/100")
+    # The rating is rendered in a flexible card so longer labels never get truncated.
+    with cols[1]:
+        st.markdown(
+            '<div class="audit-rating"><div class="audit-rating-label">Rating</div>'
+            f'<div class="audit-rating-value">{report["grade"]}</div></div>',
+            unsafe_allow_html=True,
+        )
+    for col, label, status in zip(cols[2:], ("Passed", "Warnings", "Failed"), ("pass", "warning", "fail")):
+        col.metric(label, report["summary"][status])
     st.progress(report["score"] / 100)
     st.caption("The score is a transparent heuristic based on 11 on-page checks, not a Google metric.")
     st.markdown("#### Detailed checks")
@@ -61,7 +73,21 @@ if report:
     if checks:
         frame = pd.DataFrame(checks)[["category", "name", "status", "detail", "recommendation"]]
         frame.columns = ["Category", "Check", "Status", "Finding", "Recommendation"]
-        st.dataframe(frame, use_container_width=True, hide_index=True, height=min(480, 42 * (len(frame) + 1)))
+        st.dataframe(
+            frame,
+            width="stretch",
+            hide_index=True,
+            row_height=54,
+            height=min(680, 54 * (len(frame) + 1) + 8),
+            column_config={
+                "Category": st.column_config.TextColumn("Category", width="small"),
+                "Check": st.column_config.TextColumn("Check", width="medium"),
+                "Status": st.column_config.TextColumn("Status", width="small"),
+                "Finding": st.column_config.TextColumn("Finding", width="large"),
+                "Recommendation": st.column_config.TextColumn("Recommendation", width="large"),
+            },
+        )
+        st.caption("Tip: hover over a cell to read long text, or expand a priority recommendation below.")
     else:
         st.info("No checks match the selected filters.")
     issues = [c for c in report["checks"] if c["status"] != "pass"]
@@ -75,8 +101,8 @@ if report:
         st.success("All available on-page checks passed. Keep monitoring your content and technical SEO.")
     st.markdown("#### Export your report")
     c1, c2 = st.columns(2)
-    c1.download_button("⬇ Download HTML report", export_html(report), file_name="seo-audit-report.html", mime="text/html", use_container_width=True)
-    c2.download_button("⬇ Download JSON data", export_json(report), file_name="seo-audit-report.json", mime="application/json", use_container_width=True)
+    c1.download_button("⬇ Download HTML report", export_html(report), file_name="seo-audit-report.html", mime="text/html", width="stretch")
+    c2.download_button("⬇ Download JSON data", export_json(report), file_name="seo-audit-report.json", mime="application/json", width="stretch")
 else:
     st.markdown("### What we check")
     a, b, c = st.columns(3)
@@ -91,4 +117,4 @@ else:
         st.write("Canonical URL, robots meta directive, HTTPS, and link destinations.")
 
 st.divider()
-st.caption("SEO Audit Lite v1.0 · Free, open-source, single-page HTML analyzer. It does not measure Core Web Vitals, crawl an entire site, or predict Google rankings. Scan only sites you are authorized to assess.")
+st.caption("SEO Audit Lite v1.1 · Free, open-source, single-page HTML analyzer. It does not measure Core Web Vitals, crawl an entire site, or predict Google rankings. Scan only sites you are authorized to assess.")
