@@ -35,6 +35,8 @@ if submit:
             st.session_state["error"] = str(exc)
             st.session_state.pop("report", None)
         except Exception:
+            import logging
+            logging.exception("Unexpected SEO audit failure")
             st.session_state["error"] = "The audit could not be completed. Please try another public website."
             st.session_state.pop("report", None)
 
