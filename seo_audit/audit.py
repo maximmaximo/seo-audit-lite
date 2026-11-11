@@ -106,7 +106,7 @@ def fetch_html(value: str) -> tuple[str, str, dict]:
                             raise AuditError("The page exceeds the 2 MB scan limit.")
                         chunks.append(chunk)
                     raw = b"".join(chunks)
-                    response.encoding = response.apparent_encoding or "utf-8"
+                    response.encoding = response.encoding or "utf-8"
                     html = raw.decode(response.encoding, errors="replace")
                     return url, html, {"status_code": response.status_code, "content_type": content_type, "bytes": total}
             except requests.RequestException as exc:
